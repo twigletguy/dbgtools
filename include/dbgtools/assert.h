@@ -73,6 +73,12 @@ void assert_register_callback( assert_callback_t callback, void* user_data );
 #define VERIFY(cond, ...) ((void)(cond))
 
 /**
+* macro non-conditionally breaks into the debugger.
+* @note if ASSERT_ENABLE is not defined it expands to a noop.
+*/
+#define FAIL(...) ((void)sizeof( 0 ))
+
+/**
  * macro inserting a breakpoint into the code that breaks into the debugger on most platforms.
  */
 #define DBG_TOOLS_BREAKPOINT
@@ -102,13 +108,16 @@ assert_action assert_call_trampoline( const char* file, unsigned int line, const
 #ifdef DBG_TOOLS_ASSERT_ENABLE
 	#undef ASSERT
 	#undef VERIFY
+    #undef FAIL
 
 	#if defined( _MSC_VER )
 		#define ASSERT(cond, ...) ( (void)( ( !(cond) ) && ( assert_call_trampoline( __FILE__, __LINE__, #cond, __VA_ARGS__ ) == ASSERT_ACTION_BREAK ) && ( DBG_TOOLS_BREAKPOINT, 1 ) ) )
 		#define VERIFY(cond, ...) ASSERT( cond, __VA_ARGS__ )
+        #define FAIL(...) ( ( assert_call_trampoline( __FILE__, __LINE__, nullptr, __VA_ARGS__ ) == ASSERT_ACTION_BREAK ) && ( DBG_TOOLS_BREAKPOINT, 1 ) )
 	#elif defined( __GNUC__ )
 		#define ASSERT(cond, args...) ( (void)( ( !(cond) ) && ( assert_call_trampoline( __FILE__, __LINE__, #cond, ##args ) == ASSERT_ACTION_BREAK ) && ( DBG_TOOLS_BREAKPOINT, 1 ) ) )
 		#define VERIFY(cond, args...) ASSERT( cond, ##args )
+        #define FAIL(args...) ( ( assert_call_trampoline( __FILE__, __LINE__, nullptr, ##args ) == ASSERT_ACTION_BREAK ) && ( DBG_TOOLS_BREAKPOINT, 1 ) )
 	#endif
 #else
 	void assert_register_callback( assert_callback_t, void* ) {}
