@@ -90,6 +90,7 @@ int callstack_symbols( void** addresses, callstack_symbol_t* out_syms, int num_a
 	IMAGEHLP_LINE64 line;
 	PSYMBOL_INFO    sym_info;
 	char buffer[sizeof(SYMBOL_INFO) + MAX_SYM_NAME * sizeof(TCHAR)];
+	static BOOL initialized = FALSE;
 #endif
 
 	int num_translated = 0;
@@ -164,10 +165,15 @@ int callstack_symbols( void** addresses, callstack_symbol_t* out_syms, int num_a
 #elif defined( _MSC_VER )
 
 	process = GetCurrentProcess();
-	res     = SymInitialize( process, NULL, TRUE ); // TODO: Only initialize once!
+	if (!initialized)
+		res = SymInitialize(process, NULL, TRUE);
+	else
+		res = TRUE;
 
 	if( res == 0 )
 		return 0;
+
+	initialized = TRUE;
 
 	sym_info  = (PSYMBOL_INFO)buffer;
 	sym_info->SizeOfStruct = sizeof(SYMBOL_INFO);
